@@ -350,3 +350,41 @@ canvas.three { display: block; touch-action: manipulation; }
 .pcard.up { background: var(--card); transform: rotateY(180deg) scaleX(-1); }
 .pcard.up .front { display: grid; place-items: center; }
 .pcard.match { background: #dff7ea; box-shadow: none; transform: translate(3px, 3px); }
+
+/* ---------- Arcade y juegos rápidos ---------- */
+canvas.arcade { display: block; touch-action: none; }
+.stage:has(canvas) { touch-action: none; }
+
+.zone-track { position: relative; width: min(340px, 86%); height: 46px; border: 2px solid var(--ink); border-radius: 6px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+.zone-hit { position: absolute; top: 0; bottom: 0; background: var(--mint); border-left: 2px solid var(--ink); border-right: 2px solid var(--ink); }
+.zone-cursor { position: absolute; top: -10px; bottom: -10px; width: 6px; margin-left: -3px; background: var(--ink); border-radius: 3px; }
+
+.tf-row { display: flex; gap: 14px; margin-top: 30px; width: min(360px, 90%); }
+.tf { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px; font-weight: 700; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 4px 4px 0 var(--ink); }
+.tf.yes { background: var(--mint); }
+.tf.no { background: var(--pink); }
+.tf:active { transform: translate(4px, 4px); box-shadow: none; }
+
+.num-show { font-size: 2.6rem; letter-spacing: .12em; margin: 34px 0 18px; min-height: 1.2em; word-break: break-all; padding: 0 12px; }
+.numpad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; transition: opacity .15s; }
+.numpad.off { opacity: .3; pointer-events: none; }
+.numpad button { height: 52px; border: 2px solid var(--ink); border-radius: 8px; background: var(--card); box-shadow: 3px 3px 0 var(--ink); font-weight: 700; font-size: 1.3rem; }
+.numpad button.ok { background: var(--butter); font-size: 1rem; }
+.numpad button:active { transform: translate(3px, 3px); box-shadow: none; }
+
+.ana-slots, .ana-tiles { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 0 12px; }
+.ana-slots { margin: 20px 0 24px; }
+.ana-slot { width: 48px; height: 56px; border-bottom: 4px solid var(--ink); display: grid; place-items: center; font-family: var(--serif); font-size: 2rem; }
+.ana-tiles button { width: 54px; height: 54px; border: 2px solid var(--ink); border-radius: 8px; background: var(--butter); box-shadow: 3px 3px 0 var(--ink); font-family: var(--serif); font-size: 1.7rem; }
+.ana-tiles button:disabled { opacity: .25; box-shadow: none; transform: translate(3px, 3px); }
+
+.sum-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: min(330px, 86%); margin-top: 30px; }
+.sum-grid button { aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 8px; background: var(--card); box-shadow: 3px 3px 0 var(--ink); font-family: var(--serif); font-size: 2rem; }
+.sum-grid button.sel { background: var(--butter); transform: translate(3px, 3px); box-shadow: none; }
+
+.three-msg {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(.6); opacity: 0; pointer-events: none;
+  font-family: var(--serif); font-size: 3.4rem; color: var(--ink); background: var(--butter); padding: 4px 22px;
+  border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); border-radius: 6px; transition: transform .15s, opacity .15s; white-space: nowrap;
+}
+.three-msg.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }

@@ -1,7 +1,7 @@
 // Navegación, puntuaciones y "Reto exprés". Todo se guarda en localStorage.
 
 const STORE_KEY = "playnow:v1";
-const NEW_GAMES = new Set(["torre", "carril", "meteoritos", "parejas"]);
+const NEW_GAMES = new Set(["aleteo", "rebote", "atrapa", "cortar", "serpiente", "zona", "vof", "numero", "anagramas", "suma10", "espiral", "penaltis", "salto"]);
 const app = document.getElementById("app");
 let cleanup = null;
 let filter = "Todos";
@@ -15,8 +15,9 @@ data.count = data.count || data.plays.length;
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {} };
 
 const byId = Object.fromEntries(GAMES.map((g) => [g.id, g]));
-const CATS = ["Todos", "3D", ...new Set(GAMES.map((g) => g.cat))];
-const inFilter = (g) => filter === "Todos" || (filter === "3D" ? g.is3d : g.cat === filter);
+const CATS = ["Todos", "Nuevos", "3D", ...new Set(GAMES.map((g) => g.cat))];
+const inFilter = (g) =>
+  filter === "Todos" || (filter === "Nuevos" ? NEW_GAMES.has(g.id) : filter === "3D" ? g.is3d : g.cat === filter);
 const gIcon = (g, size = 18) => `<span class="gi" style="color:${g.color}">${icon(g.icon, size)}</span>`;
 const isBetter = (g, a, b) => b == null || (g.lowerIsBetter ? a < b : a > b);
 const bestPts = (g) => (data.best[g.id] != null ? g.points(data.best[g.id]) : null);
