@@ -1,7 +1,7 @@
 // Navegación, puntuaciones y "Reto exprés". Todo se guarda en localStorage.
 
 const STORE_KEY = "playnow:v1";
-const NEW_GAMES = new Set(["orden", "topos", "flechas", "cuenta", "ruta"]);
+const NEW_GAMES = new Set(["torre", "carril", "meteoritos", "parejas"]);
 const app = document.getElementById("app");
 let cleanup = null;
 let filter = "Todos";
@@ -15,7 +15,9 @@ data.count = data.count || data.plays.length;
 const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {} };
 
 const byId = Object.fromEntries(GAMES.map((g) => [g.id, g]));
-const CATS = ["Todos", ...new Set(GAMES.map((g) => g.cat))];
+const CATS = ["Todos", "3D", ...new Set(GAMES.map((g) => g.cat))];
+const inFilter = (g) => filter === "Todos" || (filter === "3D" ? g.is3d : g.cat === filter);
+const gIcon = (g, size = 18) => `<span class="gi" style="color:${g.color}">${icon(g.icon, size)}</span>`;
 const isBetter = (g, a, b) => b == null || (g.lowerIsBetter ? a < b : a > b);
 const bestPts = (g) => (data.best[g.id] != null ? g.points(data.best[g.id]) : null);
 const verdict = (pts) => (pts >= 850 ? "Leyenda." : pts >= 600 ? "Muy fino." : pts >= 350 ? "Nada mal." : "Calentando motores.");
@@ -57,7 +59,8 @@ function gameCard(g) {
     <div class="stripe" style="background:${g.color}"></div>
     <div class="body">
       <div class="tags">
-        <span class="label" style="color:${g.color}">● ${g.code} · ${g.cat}</span>
+        <span class="label tagline" style="color:${g.color}">${icon(g.icon, 14)} ${g.code} · ${g.cat}</span>
+        ${g.is3d ? `<span class="pill d3">${icon("cube", 11)} 3D</span>` : ""}
         ${NEW_GAMES.has(g.id) ? `<span class="pill new">NUEVO</span>` : ""}
       </div>
       <h3>${g.name}</h3>
@@ -65,7 +68,7 @@ function gameCard(g) {
       <div class="score">${bp ?? "—"}</div>
       <div class="foot">
         <div><div class="label" style="color:var(--muted)">Récord</div><div class="rec">${data.best[g.id] != null ? g.format(data.best[g.id]) : "—"}</div></div>
-        <span class="play">↗</span>
+        <span class="play">${icon("arrowUR", 18)}</span>
       </div>
       <div class="mini"><i style="width:${(bp ?? 0) / 10}%;background:${g.color}"></i></div>
       <div class="wm" style="color:${g.color}">${g.code}</div>
@@ -80,10 +83,10 @@ function home() {
   const played = GAMES.filter((g) => data.best[g.id] != null).length;
   const last10 = data.plays.slice(0, 10);
   const avg = last10.length ? Math.round(last10.reduce((a, p) => a + p.pts, 0) / last10.length) : null;
-  const visible = GAMES.filter((g) => filter === "Todos" || g.cat === filter);
+  const visible = GAMES.filter(inFilter);
   const recent = data.plays.slice(0, 6).map((p) => {
     const g = byId[p.id];
-    return g ? `<div class="item"><span>${g.emoji} ${g.name}</span><span class="l">${g.format(p.raw)} · <b style="color:var(--ink)">${p.pts}</b> pts</span></div>` : "";
+    return g ? `<div class="item"><span class="nm">${gIcon(g)} ${g.name}</span><span class="l">${g.format(p.raw)} · <b style="color:var(--ink)">${p.pts}</b> pts</span></div>` : "";
   }).join("");
 
   app.replaceChildren(html`
@@ -91,10 +94,10 @@ function home() {
       <section class="block hero">
         <div class="label">Temporada libre · sin esperas</div>
         <h1>Juega ahora.<br><em>Sin esperar</em> a nadie.</h1>
-        <p>${GAMES.length} minijuegos de medio minuto. Sin grupo, sin cuentas y sin límite de intentos. Bate tus récords cuando te apetezca.</p>
+        <p>${GAMES.length} minijuegos de medio minuto, ${GAMES.filter((g) => g.is3d).length} de ellos en 3D. Sin grupo, sin cuentas y sin límite de intentos. Bate tus récords cuando te apetezca.</p>
         <div class="row">
-          <button class="btn" data-nav="challenge">Reto exprés →</button>
-          <button class="btn ghost" data-nav="random">Juego aleatorio</button>
+          <button class="btn" data-nav="challenge">Reto exprés ${icon("arrowRight")}</button>
+          <button class="btn ghost" data-nav="random">${icon("dice")} Aleatorio</button>
         </div>
         <div class="meter">
           <div class="meter-head"><span>Juegos descubiertos</span><b>${played} de ${GAMES.length}</b></div>
@@ -131,14 +134,14 @@ function home() {
           <h2>Tu reto de ahora</h2>
         </div>
         <div class="row">
-          <button class="btn ghost" id="reshuffle">↻ Barajar</button>
+          <button class="btn ghost" id="reshuffle">${icon("shuffle")} Barajar</button>
           <button class="btn dark" data-nav="challenge">Empezar reto</button>
         </div>
       </div>
       <div class="slots">
         ${challengePicks.map((g, i) => `<div class="slot">
           <div class="label">Prueba ${i + 1}</div>
-          <div class="t">${g.emoji} ${g.name}</div>
+          <div class="t">${gIcon(g, 20)} ${g.name}</div>
           <div class="s">${g.cat} · récord ${data.best[g.id] != null ? g.format(data.best[g.id]) : "—"}</div>
         </div>`).join("")}
         <div class="slot">
@@ -176,7 +179,7 @@ function play(g, ctx = null) {
   const rec = data.best[g.id] != null ? `Récord: <b>${g.format(data.best[g.id])}</b>` : "¡Primera partida!";
   app.replaceChildren(html`<div class="play-wrap">
     <div class="play-head">
-      <button class="back" data-nav="home" aria-label="Volver">←</button>
+      <button class="back" data-nav="home" aria-label="Volver">${icon("arrowLeft")}</button>
       <div>
         <div class="label">${ctx ? `Reto exprés · ${ctx.i + 1} de 3` : `${g.code} · ${g.cat}`}</div>
         <div class="title">${g.name}</div>
@@ -189,16 +192,34 @@ function play(g, ctx = null) {
   const stage = document.getElementById("stage");
 
   stage.replaceChildren(html`<div class="intro">
-    <div class="emoji">${g.emoji}</div>
+    <div class="gicon" style="background:${g.color}">${icon(g.icon, 44)}</div>${g.is3d ? `<div class="pill d3 big3d">${icon("cube", 12)} Juego 3D</div>` : ""}
     <h1>${g.name}</h1>
     <p>${g.desc}</p>
     <div class="rec">${rec}</div>
     <button class="btn dark" id="go">¡Jugar!</button>
   </div>`);
-  stage.querySelector("#go").addEventListener("click", () => {
+  if (g.is3d) loadThree().catch(() => {}); // precarga mientras se lee la intro
+  const go = stage.querySelector("#go");
+  go.addEventListener("click", async () => {
+    if (g.is3d) {
+      go.disabled = true;
+      go.textContent = "Cargando 3D…";
+      try { await loadThree(); } catch {
+        go.disabled = false;
+        go.textContent = "Reintentar";
+        return;
+      }
+      if (!stage.isConnected) return; // el usuario se fue mientras cargaba
+    }
     stage.replaceChildren();
     let finished = false;
-    cleanup = g.start(stage, (raw) => {
+    try {
+      cleanup = g.start(stage, onFinish);
+    } catch (err) {
+      console.error(err);
+      stage.replaceChildren(html`<div class="intro"><h1>Sin 3D</h1><p>Tu navegador no permite gráficos 3D (WebGL). Prueba otro juego.</p><button class="btn dark" data-nav="random">${icon("dice")} Otro juego</button></div>`);
+    }
+    function onFinish(raw) {
       if (finished) return;
       finished = true;
       teardown();
@@ -206,7 +227,7 @@ function play(g, ctx = null) {
       const res = record(g, raw);
       if (ctx) return ctx.onDone(res.pts, raw);
       showResult(stage, g, raw, res);
-    });
+    }
   });
 }
 
@@ -216,10 +237,10 @@ function showResult(stage, g, raw, { pts, newBest, hadPrev }) {
     <div class="pts">${pts}</div>
     <div class="label" style="margin-top:8px">puntos de 1000</div>
     <div class="raw">${g.format(raw)}</div>
-    ${newBest && hadPrev ? `<div class="tag">★ ¡Nuevo récord!</div>` : newBest ? `<div class="tag">Primer récord</div>` : `<div class="hint" style="margin:10px 0 22px">Récord: ${g.format(data.best[g.id])}</div>`}
+    ${newBest && hadPrev ? `<div class="tag">${icon("star", 14)} ¡Nuevo récord!</div>` : newBest ? `<div class="tag">Primer récord</div>` : `<div class="hint" style="margin:10px 0 22px">Récord: ${g.format(data.best[g.id])}</div>`}
     <div class="row">
-      <button class="btn dark" id="again">↻ Otra vez</button>
-      <button class="btn ghost" data-nav="random">Otro juego</button>
+      <button class="btn dark" id="again">${icon("refresh")} Otra vez</button>
+      <button class="btn ghost" data-nav="random">${icon("dice")} Otro juego</button>
     </div>
   </div>`);
   stage.querySelector("#again").addEventListener("click", () => play(g));
@@ -241,8 +262,8 @@ function challenge() {
           <div class="verdict">${verdict(pts)}</div>
           <div class="pts">${pts}</div>
           <div class="label" style="margin-top:8px">puntos en ${picks[i].name}</div>
-          <p class="hint" style="margin:22px 0">Siguiente: <b style="color:var(--ink)">${picks[i + 1].emoji} ${picks[i + 1].name}</b></p>
-          <button class="btn dark" id="next">Continuar →</button>
+          <p class="hint" style="margin:22px 0">Siguiente: <b style="color:var(--ink)">${gIcon(picks[i + 1])} ${picks[i + 1].name}</b></p>
+          <button class="btn dark" id="next">Continuar ${icon("arrowRight")}</button>
         </div>`);
         stage.querySelector("#next").addEventListener("click", () => step(i + 1));
       } else challengeResult(results);
@@ -255,7 +276,7 @@ function challengeResult(results) {
   const total = results.reduce((a, r) => a + r.pts, 0);
   const newBest = total > (data.bestChallenge || 0);
   if (newBest) { data.bestChallenge = total; save(); }
-  const rows = results.map((r) => `<div class="item"><span>${r.g.emoji} ${r.g.name}</span><span><span class="hint">${r.g.format(r.raw)} ·</span> <b>${r.pts}</b></span></div>`).join("");
+  const rows = results.map((r) => `<div class="item"><span class="nm">${gIcon(r.g)} ${r.g.name}</span><span><span class="hint">${r.g.format(r.raw)} ·</span> <b>${r.pts}</b></span></div>`).join("");
   const stage = document.getElementById("stage");
   document.querySelectorAll(".challenge-bar div").forEach((d) => (d.className = "done"));
   document.querySelector(".play-head .label").textContent = "Reto exprés · completado";
@@ -263,19 +284,19 @@ function challengeResult(results) {
     <div class="verdict">${verdict(total / 3)}</div>
     <div class="pts">${total}</div>
     <div class="label" style="margin-top:8px">de 3000 puntos</div>
-    ${newBest ? `<div class="tag">★ ¡Mejor reto!</div>` : `<div class="hint" style="margin:10px 0 22px">Tu mejor reto: ${data.bestChallenge}</div>`}
+    ${newBest ? `<div class="tag">${icon("star", 14)} ¡Mejor reto!</div>` : `<div class="hint" style="margin:10px 0 22px">Tu mejor reto: ${data.bestChallenge}</div>`}
     <div class="list">${rows}</div>
     <div class="row">
       <button class="btn dark" data-nav="challenge">Otro reto</button>
-      <button class="btn ghost" id="share">Compartir</button>
+      <button class="btn ghost" id="share">${icon("share")} Compartir</button>
     </div>
   </div>`);
   stage.querySelector("#share").addEventListener("click", async () => {
     const text = `PlayNow · Reto exprés: ${total}/3000\n` +
-      results.map((r) => `${r.g.emoji} ${r.g.name}: ${r.pts}`).join("\n") + `\n${location.origin}`;
+      results.map((r) => `${r.g.name}: ${r.pts}`).join("\n") + `\n${location.origin}`;
     try {
       if (navigator.share) await navigator.share({ text });
-      else { await navigator.clipboard.writeText(text); stage.querySelector("#share").textContent = "✓ Copiado"; }
+      else { await navigator.clipboard.writeText(text); stage.querySelector("#share").innerHTML = `${icon("check")} Copiado`; }
     } catch {}
   });
 }
@@ -293,5 +314,6 @@ document.addEventListener("click", (e) => {
   } else if (card) play(byId[card.dataset.game]);
 });
 
+document.getElementById("total-star").innerHTML = icon("star", 14);
 renderTotal();
 home();

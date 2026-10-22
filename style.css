@@ -46,7 +46,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .brand { font-family: var(--serif); font-size: 1.6rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
 .brand .dot { display: inline-block; flex: none; width: 14px; height: 14px; background: var(--tomato); border: 2px solid var(--ink); border-radius: 50%; }
 .total {
-  font-weight: 700; background: var(--butter); padding: 6px 14px;
+  display: inline-flex; align-items: center; gap: 6px; font-weight: 700; background: var(--butter); padding: 6px 14px;
   border: 2px solid var(--ink); border-radius: 999px; box-shadow: 3px 3px 0 var(--ink);
 }
 
@@ -171,7 +171,11 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
 .stage-stripe + .stage { border-top-left-radius: 0; border-top-right-radius: 0; }
 
 .intro { text-align: center; padding: 28px; position: relative; z-index: 1; }
-.intro .emoji { font-size: 3.6rem; }
+.intro .gicon {
+  width: 84px; height: 84px; margin: 0 auto 10px; display: grid; place-items: center; color: var(--card);
+  border: 2px solid var(--ink); border-radius: 18px; box-shadow: 5px 5px 0 var(--ink);
+}
+.intro .big3d { margin: 6px 0 0; font-size: .72rem; padding: 4px 10px; }
 .intro h1 { font-family: var(--serif); font-weight: 400; font-size: 2.8rem; margin: 6px 0; }
 .intro p { color: var(--muted); max-width: 360px; margin: 8px auto 24px; line-height: 1.45; }
 .intro .rec { margin: -8px 0 22px; font-size: .9rem; }
@@ -243,7 +247,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
 }
 .choices button:active { transform: translate(4px, 4px); box-shadow: none; }
 
-canvas.stack { width: 100%; height: 440px; display: block; touch-action: manipulation; }
+canvas.three { display: block; touch-action: manipulation; }
+.flash-bad canvas.three { animation: hurt .25s; }
+@keyframes hurt { 50% { opacity: .55; } }
 
 .odd-grid, .mem-grid { display: grid; gap: 6px; width: min(340px, 86%); aspect-ratio: 1; margin-top: 30px; }
 .odd-grid button { border-radius: 4px; width: 100%; height: 100%; border: 2px solid var(--ink); }
@@ -316,3 +322,31 @@ canvas.stack { width: 100%; height: 440px; display: block; touch-action: manipul
   .simon { grid-template-columns: repeat(2, 112px); }
   .simon button { width: 112px; height: 112px; }
 }
+
+/* ---------- Iconos ---------- */
+.ic { flex: none; vertical-align: -0.15em; }
+.btn .ic, .back .ic { vertical-align: middle; }
+.back { display: grid; place-items: center; }
+.gcard .play .ic { display: block; }
+.hud span { display: inline-flex; align-items: center; gap: 5px; }
+.hearts { color: var(--bad); display: inline-flex; gap: 2px; }
+.gcard .tagline { display: inline-flex; align-items: center; gap: 5px; }
+.gi { display: inline-flex; vertical-align: -0.2em; }
+.nm { display: inline-flex; align-items: center; gap: 8px; }
+.slot .t { display: flex; align-items: center; gap: 8px; }
+.pill { font-size: .62rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; letter-spacing: .04em; }
+.pill.d3 { background: var(--ink); color: var(--butter); display: inline-flex; align-items: center; gap: 4px; }
+.arrow .ic { display: block; stroke-width: 2.6; }
+.dpad button { display: grid; place-items: center; }
+
+/* ---------- Parejas ---------- */
+.pair-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: min(340px, 86%); margin-top: 30px; }
+.pcard {
+  aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 3px 3px 0 var(--ink);
+  background: var(--navy) repeating-linear-gradient(45deg, transparent 0 6px, rgba(255,255,255,.07) 6px 12px);
+  display: grid; place-items: center; transition: transform .15s;
+}
+.pcard .front { display: none; }
+.pcard.up { background: var(--card); transform: rotateY(180deg) scaleX(-1); }
+.pcard.up .front { display: grid; place-items: center; }
+.pcard.match { background: #dff7ea; box-shadow: none; transform: translate(3px, 3px); }

@@ -1,7 +1,8 @@
 // Cada minijuego: start(stage, finish) monta el juego en `stage` y llama a
 // finish(raw) al acabar. Devuelve una función de limpieza.
 // points(raw) normaliza el resultado a 0–1000 para que todos sean comparables.
-// code/cat/color se usan en las tarjetas de la portada.
+// code/cat/color/icon se usan en las tarjetas de la portada; is3d marca los juegos
+// que necesitan Three.js (ver games3d.js).
 
 const clamp = (v, a = 0, b = 1000) => Math.max(a, Math.min(b, Math.round(v)));
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -40,7 +41,7 @@ function countdown(dur, getT0, onTick, onEnd) {
 const GAMES = [
   {
     id: "reflejos", code: "RFX", cat: "Reflejos", color: "#ff5a36",
-    name: "Reflejos", emoji: "⚡",
+    name: "Reflejos", icon: "zap",
     desc: "Toca en cuanto la pantalla se ponga verde. Cinco rondas, cuenta la media.",
     lowerIsBetter: true,
     format: (ms) => `${Math.round(ms)} ms`,
@@ -85,7 +86,7 @@ const GAMES = [
 
   {
     id: "crono", code: "CRN", cat: "Precisión", color: "#2f6bff",
-    name: "Para el crono", emoji: "⏱️",
+    name: "Para el crono", icon: "stopwatch",
     desc: "Para el reloj en 5,000 segundos exactos. A los dos segundos se oculta.",
     lowerIsBetter: true,
     format: (ms) => `${Math.round(ms)} ms de error`,
@@ -119,7 +120,7 @@ const GAMES = [
 
   {
     id: "memoria", code: "SMN", cat: "Memoria", color: "#00a676",
-    name: "Memoria", emoji: "🧠",
+    name: "Memoria", icon: "simon",
     desc: "Repite la secuencia de colores. Cada ronda añade un paso más.",
     format: (n) => `Nivel ${n}`,
     points: (n) => clamp(n * 75),
@@ -156,7 +157,7 @@ const GAMES = [
 
   {
     id: "diana", code: "DNA", cat: "Precisión", color: "#e8448f",
-    name: "Diana", emoji: "🎯",
+    name: "Diana", icon: "target",
     desc: "Revienta 15 dianas lo más rápido posible. Cada fallo suma medio segundo.",
     lowerIsBetter: true,
     format: (ms) => `${(ms / 1000).toFixed(2)} s`,
@@ -195,7 +196,7 @@ const GAMES = [
 
   {
     id: "toques", code: "TAP", cat: "Velocidad", color: "#ffb000",
-    name: "Toques locos", emoji: "👆",
+    name: "Toques locos", icon: "tap",
     desc: "Machaca el botón todas las veces que puedas en 5 segundos.",
     format: (n) => `${n} toques`,
     points: (n) => clamp((n - 10) * 30),
@@ -222,71 +223,8 @@ const GAMES = [
   },
 
   {
-    id: "torre", code: "TRR", cat: "Precisión", color: "#8a5cff",
-    name: "Torre", emoji: "🧱",
-    desc: "Apila bloques. Lo que sobresale se corta y la torre se estrecha.",
-    format: (n) => `${n} pisos`,
-    points: (n) => clamp(n * 45),
-    start(stage, finish) {
-      const cv = el("canvas", { className: "stack" });
-      stage.append(cv);
-      const ctx = cv.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const W = stage.clientWidth, H = 440, BH = 26;
-      cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
-      const PAL = ["#ff5a36", "#ffb000", "#00a676", "#2f6bff", "#8a5cff", "#e8448f", "#00a3c4"];
-      const col = (i) => PAL[i % PAL.length];
-      const blocks = [{ x: W / 2 - 80, w: 160 }];
-      let cur = { x: 0, w: 160, dir: 1 }, speed = 2.6, over = false, raf, cut = null;
-      const rect = (x, y, w, c) => {
-        ctx.fillStyle = c; ctx.fillRect(x, y, w, BH - 3);
-        ctx.strokeStyle = "#121212"; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, w - 2, BH - 5);
-      };
-      const draw = () => {
-        ctx.clearRect(0, 0, W, H);
-        const n = blocks.length;
-        const off = Math.max(0, (n + 1) * BH - H * 0.6);
-        blocks.forEach((b, i) => rect(b.x, H - (i + 1) * BH + off, b.w, col(i)));
-        if (cut) {
-          cut.y += cut.vy; cut.vy += 0.5;
-          ctx.globalAlpha = 0.6; rect(cut.x, cut.y + off, cut.w, cut.c); ctx.globalAlpha = 1;
-          if (cut.y > H + 100) cut = null;
-        }
-        if (!over) {
-          cur.x += cur.dir * speed;
-          if (cur.x + cur.w > W || cur.x < 0) cur.dir *= -1;
-          rect(cur.x, H - (n + 1) * BH + off, cur.w, col(n));
-        }
-        ctx.fillStyle = "#121212"; ctx.font = "400 44px 'DM Serif Display', serif"; ctx.textAlign = "center";
-        ctx.fillText(String(n - 1), W / 2, 64);
-        raf = requestAnimationFrame(draw);
-      };
-      const drop = () => {
-        if (over) return;
-        const top = blocks[blocks.length - 1];
-        const l = Math.max(cur.x, top.x), r = Math.min(cur.x + cur.w, top.x + top.w);
-        const w = r - l;
-        const y = H - (blocks.length + 1) * BH;
-        if (w <= 0) {
-          over = true;
-          cut = { x: cur.x, w: cur.w, y, vy: 0, c: col(blocks.length) };
-          setTimeout(() => finish(blocks.length - 1), 900);
-          return;
-        }
-        if (cur.w - w > 0.5) cut = { x: cur.x < top.x ? cur.x : r, w: cur.w - w, y, vy: 0, c: col(blocks.length) };
-        blocks.push({ x: l, w });
-        speed = Math.min(7, speed + 0.18);
-        cur = { x: cur.dir > 0 ? 0 : W - w, w, dir: cur.dir };
-      };
-      cv.addEventListener("pointerdown", drop);
-      draw();
-      return () => cancelAnimationFrame(raf);
-    },
-  },
-
-  {
     id: "mates", code: "CLC", cat: "Mente", color: "#00a3c4",
-    name: "Cálculo rápido", emoji: "➗",
+    name: "Cálculo rápido", icon: "calc",
     desc: "Resuelve todas las operaciones que puedas en 25 segundos. Fallar quita tiempo.",
     format: (n) => `${n} aciertos`,
     points: (n) => clamp(n * 60),
@@ -318,14 +256,14 @@ const GAMES = [
       };
       gen();
       return countdown(25000, () => t0,
-        (left) => setHud(hud, `✓ ${score}`, `${(left / 1000).toFixed(1)} s`),
+        (left) => setHud(hud, `${icon("check", 14)} ${score}`, `${(left / 1000).toFixed(1)} s`),
         () => { ch.replaceChildren(); finish(score); });
     },
   },
 
   {
     id: "colores", code: "STR", cat: "Mente", color: "#ff5a36",
-    name: "¿Qué color?", emoji: "🎨",
+    name: "¿Qué color?", icon: "drop",
     desc: "Elige el color de la tinta, no la palabra escrita. 25 segundos.",
     format: (n) => `${n} aciertos`,
     points: (n) => clamp(n * 55),
@@ -354,14 +292,14 @@ const GAMES = [
       }));
       gen();
       return countdown(25000, () => t0,
-        (left) => setHud(hud, `✓ ${score}`, `${(left / 1000).toFixed(1)} s`),
+        (left) => setHud(hud, `${icon("check", 14)} ${score}`, `${(left / 1000).toFixed(1)} s`),
         () => { ch.replaceChildren(); finish(score); });
     },
   },
 
   {
     id: "distinto", code: "ODD", cat: "Percepción", color: "#00a676",
-    name: "El distinto", emoji: "👁️",
+    name: "El distinto", icon: "eye",
     desc: "Encuentra la casilla de otro tono. Cada vez hay más y se parecen más. 30 s.",
     format: (n) => `${n} encontrados`,
     points: (n) => clamp(n * 45),
@@ -388,7 +326,7 @@ const GAMES = [
       };
       gen();
       return countdown(30000, () => t0,
-        (left) => setHud(hud, `✓ ${score}`, `${(left / 1000).toFixed(1)} s`),
+        (left) => setHud(hud, `${icon("check", 14)} ${score}`, `${(left / 1000).toFixed(1)} s`),
         () => { grid.replaceChildren(); finish(score); });
     },
   },
@@ -397,7 +335,7 @@ const GAMES = [
 
   {
     id: "orden", code: "ORD", cat: "Percepción", color: "#2f6bff",
-    name: "Del 1 al 16", emoji: "🔢",
+    name: "Del 1 al 16", icon: "hash",
     desc: "Toca los números del 1 al 16 en orden lo más rápido que puedas.",
     lowerIsBetter: true,
     format: (ms) => `${(ms / 1000).toFixed(2)} s`,
@@ -430,7 +368,7 @@ const GAMES = [
 
   {
     id: "topos", code: "TOP", cat: "Reflejos", color: "#d94a2b",
-    name: "Topos", emoji: "🐹",
+    name: "Topos", icon: "mole",
     desc: "Atrapa todos los topos que puedas en 25 s. ¡Ojo con las bombas!",
     format: (n) => `${n} topos`,
     points: (n) => clamp(n * 40),
@@ -444,7 +382,7 @@ const GAMES = [
       holes.forEach((h) => h.addEventListener("pointerdown", () => {
         const what = h.dataset.what;
         if (!what) return;
-        h.dataset.what = ""; h.textContent = "";
+        h.dataset.what = ""; h.innerHTML = "";
         if (what === "mole") { score++; h.classList.add("hit"); setTimeout(() => h.classList.remove("hit"), 150); }
         else { score = Math.max(0, score - 3); flash(stage, false); }
       }));
@@ -455,15 +393,15 @@ const GAMES = [
           const h = free[randInt(0, free.length - 1)];
           const bomb = Math.random() < 0.18;
           h.dataset.what = bomb ? "bomb" : "mole";
-          h.textContent = bomb ? "💣" : "🐹";
+          h.innerHTML = bomb ? BOMB_SVG : MOLE_SVG;
           const life = Math.max(550, 1100 - score * 20);
-          setTimeout(() => { if (h.dataset.what) { h.dataset.what = ""; h.textContent = ""; } }, life);
+          setTimeout(() => { if (h.dataset.what) { h.dataset.what = ""; h.innerHTML = ""; } }, life);
         }
         timer = setTimeout(pop, Math.max(280, 650 - score * 12));
       };
       pop();
       const stop = countdown(25000, () => t0,
-        (left) => setHud(hud, `🐹 ${score}`, `${(left / 1000).toFixed(1)} s`),
+        (left) => setHud(hud, `${icon("mole", 16)} ${score}`, `${(left / 1000).toFixed(1)} s`),
         () => { alive = false; clearTimeout(timer); finish(score); });
       return () => { alive = false; clearTimeout(timer); stop(); };
     },
@@ -471,12 +409,12 @@ const GAMES = [
 
   {
     id: "flechas", code: "FLC", cat: "Mente", color: "#ffb000",
-    name: "Flechas", emoji: "🧭",
+    name: "Flechas", icon: "compass",
     desc: "Flecha negra: pulsa su dirección. Flecha roja: la contraria. 20 s. (También con el teclado.)",
     format: (n) => `${n} aciertos`,
     points: (n) => clamp(n * 40),
     start(stage, finish) {
-      const DIRS = ["↑", "→", "↓", "←"];
+      const arrowSvg = (d, size) => icon("arrowUp", size, `style="transform:rotate(${d * 90}deg)"`);
       const OPP = [2, 3, 0, 1];
       let score = 0, t0 = now(), dir, red;
       const hud = hudEl();
@@ -485,7 +423,7 @@ const GAMES = [
       stage.append(hud, arrow, pad);
       const gen = () => {
         dir = randInt(0, 3); red = Math.random() < 0.45;
-        arrow.textContent = DIRS[dir];
+        arrow.innerHTML = arrowSvg(dir, 120);
         arrow.classList.toggle("red", red);
       };
       const answer = (i) => {
@@ -495,7 +433,7 @@ const GAMES = [
         gen();
       };
       ["up", "right", "down", "left"].forEach((cls, i) => {
-        const b = el("button", { className: cls, textContent: DIRS[i] });
+        const b = el("button", { className: cls, innerHTML: arrowSvg(i, 30), ariaLabel: cls });
         b.addEventListener("pointerdown", () => answer(i));
         pad.append(b);
       });
@@ -504,7 +442,7 @@ const GAMES = [
       window.addEventListener("keydown", onKey);
       gen();
       const stop = countdown(20000, () => t0,
-        (left) => setHud(hud, `✓ ${score}`, `${(left / 1000).toFixed(1)} s`),
+        (left) => setHud(hud, `${icon("check", 14)} ${score}`, `${(left / 1000).toFixed(1)} s`),
         () => { window.removeEventListener("keydown", onKey); pad.replaceChildren(); finish(score); });
       return () => { window.removeEventListener("keydown", onKey); stop(); };
     },
@@ -512,7 +450,7 @@ const GAMES = [
 
   {
     id: "cuenta", code: "CNT", cat: "Percepción", color: "#e8448f",
-    name: "Cuenta rápida", emoji: "🔴",
+    name: "Cuenta rápida", icon: "dots",
     desc: "Aparecen puntos durante un instante. ¿Cuántos había? 10 rondas.",
     format: (n) => `${n}/10 aciertos`,
     points: (n) => clamp(n * 100),
@@ -527,7 +465,7 @@ const GAMES = [
         if (!alive) return;
         if (round >= ROUNDS) return finish(score);
         round++;
-        setHud(hud, `Ronda ${round}/${ROUNDS}`, `✓ ${score}`);
+        setHud(hud, `Ronda ${round}/${ROUNDS}`, `${icon("check", 14)} ${score}`);
         ch.replaceChildren();
         const n = randInt(4 + round, 9 + round);
         field.replaceChildren();
@@ -565,7 +503,7 @@ const GAMES = [
 
   {
     id: "ruta", code: "RTA", cat: "Memoria", color: "#8a5cff",
-    name: "Casillas", emoji: "🟪",
+    name: "Casillas", icon: "grid",
     desc: "Se iluminan unas casillas: memorízalas y tócalas. Tienes 3 vidas.",
     format: (n) => `Nivel ${n}`,
     points: (n) => clamp(n * 90),
@@ -578,7 +516,7 @@ const GAMES = [
         if (!alive) return;
         const size = level < 4 ? 4 : level < 8 ? 5 : 6;
         const k = Math.min(size * size - 2, 2 + level);
-        setHud(hud, `Nivel ${level}`, "❤️".repeat(lives));
+        setHud(hud, `Nivel ${level}`, `<span class="hearts">${icon("heart", 16).repeat(lives)}</span>`);
         grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
         targets = new Set(shuffleArr(Array.from({ length: size * size }, (_, i) => i)).slice(0, k));
         found = new Set();
@@ -608,6 +546,50 @@ const GAMES = [
       };
       play();
       return () => { alive = false; };
+    },
+  },
+
+  {
+    id: "parejas", code: "PRJ", cat: "Memoria", color: "#00a676",
+    name: "Parejas", icon: "cards",
+    desc: "Da la vuelta a las cartas y encuentra las 8 parejas lo antes posible.",
+    lowerIsBetter: true,
+    format: (ms) => `${(ms / 1000).toFixed(1)} s`,
+    points: (ms) => clamp(((70000 - ms) / (70000 - 20000)) * 1000),
+    start(stage, finish) {
+      const SYMS = ["zap", "target", "eye", "drop", "stopwatch", "compass", "tower", "meteor"];
+      const COLS = ["#ff5a36", "#2f6bff", "#00a676", "#ffb000", "#e8448f", "#8a5cff", "#00a3c4", "#d94a2b"];
+      const deck = shuffleArr([...SYMS.keys(), ...SYMS.keys()]);
+      let open = [], matched = 0, t0 = 0, lock = false, raf;
+      const hud = hudEl();
+      const grid = el("div", { className: "pair-grid" });
+      stage.append(hud, grid);
+      grid.append(...deck.map((k) => {
+        const c = el("button", { className: "pcard", innerHTML: `<span class="front" style="color:${COLS[k]}">${icon(SYMS[k], 34)}</span>` });
+        c.addEventListener("pointerdown", () => {
+          if (lock || c.classList.contains("up")) return;
+          if (!t0) t0 = now();
+          c.classList.add("up");
+          open.push([c, k]);
+          if (open.length < 2) return;
+          const [[c1, k1], [c2, k2]] = open;
+          open = [];
+          if (k1 === k2) {
+            c1.classList.add("match"); c2.classList.add("match"); matched++;
+            if (matched === SYMS.length) { cancelAnimationFrame(raf); setTimeout(() => finish(now() - t0), 300); }
+          } else {
+            lock = true;
+            setTimeout(() => { c1.classList.remove("up"); c2.classList.remove("up"); lock = false; }, 650);
+          }
+        });
+        return c;
+      }));
+      const upd = () => {
+        setHud(hud, `${matched}/${SYMS.length} parejas`, `${t0 ? ((now() - t0) / 1000).toFixed(1) : "0.0"} s`);
+        raf = requestAnimationFrame(upd);
+      };
+      upd();
+      return () => cancelAnimationFrame(raf);
     },
   },
 ];
